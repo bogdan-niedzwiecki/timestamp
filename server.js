@@ -4,7 +4,6 @@
 // init project
 var express = require('express');
 var app = express();
-var moment = require('moment');
 
 // enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
 // so that your API is remotely testable by FCC 
@@ -20,15 +19,14 @@ app.get("/", function (req, res) {
 });
 
 app.get("/api/:date", function (req, res) {
-  if (moment(req.params.date, 'X', true).isValid()) {
+  const unix = new Date(Number(req.params.date));
+  const utc = new Date(req.params.date);
+  const date = isValidDate(unix) || isValidDate(utc);
+
+  if (date) {
     res.json({
-      "unix": moment(Number(req.params.date)).valueOf(),
-      "utc": moment(Number(req.params.date)).toDate().toUTCString()
-    })
-  } else if (moment(req.params.date, 'YYYY-MM-DD', true).isValid()) {
-    res.json({
-      "unix": moment(`${req.params.date} +0000`, "YYYY-MM-DD Z").valueOf(),
-      "utc": moment(`${req.params.date} +0000`, "YYYY-MM-DD Z").toDate().toUTCString()
+      "unix": Math.floor(date.getTime()),
+      "utc": date.toUTCString()
     })
   } else {
     res.json({
@@ -37,7 +35,28 @@ app.get("/api/:date", function (req, res) {
   }
 });
 
+app.get("/api", function (req, res) {
+  const date = new Date();
+
+  res.json({
+    "unix": Math.floor(date.getTime()),
+    "utc": date.toString()
+  })
+});
+
 // listen for requests :)
 var listener = app.listen(process.env.PORT || 3000, function () {
   console.log('Your app is listening on port ' + listener.address().port);
 });
+
+isValidDate = (date) => {
+  if (Object.prototype.toString.call(date) === "[object Date]") {
+    if (isNaN(date.getTime())) {
+      return false;
+    } else {
+      return date;
+    }
+  } else {
+    return false;
+  }
+}
